@@ -1,4 +1,8 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { ExampleView, VIEW_TYPE_EXAMPLE } from './ExampleView';
+import { DataviewApi, getAPI, isPluginEnabled } from "obsidian-dataview";
+
+const api = getAPI() as DataviewApi;
 
 // Remember to rename these classes and interfaces!
 
@@ -10,14 +14,40 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 	mySetting: 'default'
 }
 
-export default class MyPlugin extends Plugin {
+export default class HelloWorldPlugin extends Plugin {
 	settings: MyPluginSettings;
 
 	async onload() {
 		await this.loadSettings();
 
+		this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleView(leaf, this));
+		this.addRibbonIcon("dice", "Activate view", () => {
+			this.activateView();
+		});
+		
+		// api.on("dataview:api-ready", () => { console.log("API ready!"); });
+		console.log(isPluginEnabled(this.app));
+
+
+		this.registerEvent(this.app.metadataCache.on("dataview:index-ready", () => {
+			
+			console.log("Index ready!");
+		}))
+		
+
+		
+		// this.registerEvent(this.app.metadataCache.on("dataview:metadata-change",
+		// 	(type, file, oldPath?) => {
+		// 		console.log("Metadata change!");
+		// 		console.log(api.page("Daily.md").tags)
+		// 	}))
+
+
+
+
+
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Pluginnnn', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			new Notice('This is a notice!');
 		});
@@ -89,6 +119,27 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	async activateView() {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_EXAMPLE);
+
+		if (leaves.length > 0) {
+			// A leaf with our view already exists, use that
+			leaf = leaves[0];
+		} else {
+			// Our view could not be found in the workspace, create a new leaf
+			// in the right sidebar for it
+			leaf = workspace.getRightLeaf(false);
+			await leaf.setViewState({ type: VIEW_TYPE_EXAMPLE, active: true });
+		}
+
+		// "Reveal" the leaf in case it is in a collapsed sidebar
+		workspace.revealLeaf(leaf);
+	}
+
 }
 
 class SampleModal extends Modal {
@@ -97,26 +148,26 @@ class SampleModal extends Modal {
 	}
 
 	onOpen() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.setText('Woah!');
 	}
 
 	onClose() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: HelloWorldPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: HelloWorldPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 

@@ -53,11 +53,15 @@ export default function ReactView() {
     const [foundTags, setFoundTags] = useState<string[]>([]);
     const foundTagsRef = useRef(foundTags);
     const searchTextRef = useRef(searchText);
+    const [closestMatch, setClosestMatch] = useState<string>("");
+    const [highlightedTagIndex, setHighlightedTagIndex] = useState<number>(0);
+    const highlightedTagIndexRef = useRef(highlightedTagIndex);
 
     useEffect(() => {
         foundTagsRef.current = foundTags;
         searchTextRef.current = searchText;
-    }, [foundTags, searchText]);
+        highlightedTagIndexRef.current = highlightedTagIndex;
+    }, [foundTags, searchText, highlightedTagIndex]);
 
     useEffect(() => {
         // Function to handle the key press event
@@ -70,15 +74,23 @@ export default function ReactView() {
             // then concatenate the foundTagsRef.current[0] to the searchTextRef.current
             // then set the searchTextRef.current to the new string
             let index = searchTextRef.current.lastIndexOf('/')
+            let newSearchText = ""
+            const foundTag = foundTagsRef.current[highlightedTagIndexRef.current]
             if (index > 0) {
-                setSearchText(searchTextRef.current.substring(0, index+1) + foundTagsRef.current[0])
+                newSearchText = searchTextRef.current.substring(0, index+1) + foundTag
+                setSearchText(newSearchText)
             } else {
-                setSearchText(foundTagsRef.current[0])
+                newSearchText = foundTag
+                setSearchText(newSearchText)
             }
+            updateClosestMatch(foundTagsRef.current, newSearchText, setClosestMatch);
+          }
 
-            // setSearchText(searchTextRef.current + foundTagsRef.current[0])
-            // console.log(foundTagsRef.current[0])
-            // console.log(searchTextRef.current)
+          if (event.key === 'ArrowDown') {
+            setHighlightedTagIndex((highlightedTagIndexRef.current + 1) % foundTagsRef.current.length);
+          }
+          if (event.key === 'ArrowUp') {
+            setHighlightedTagIndex((highlightedTagIndexRef.current - 1 + foundTagsRef.current.length) % foundTagsRef.current.length);
           }
         };
     
@@ -93,17 +105,23 @@ export default function ReactView() {
 
     const filter = (e) => {
         const keyword = e.target.value;
+        let foundTagList: string[] = [];
         if (keyword !== '') {
             const results = findTagsByPath(keyword, tagList)
             if (results) {
-                setFoundTags(results.map((tag: Tag) => tag.name));
+                foundTagList = results.map((tag: Tag) => tag.name)
+                setFoundTags(foundTagList);
             }
         } else {
-            setFoundTags(tagList.tags.map((tag: Tag) => tag.name));
-            // If the text field is empty, show all userss
+            foundTagList = tagList.tags.map((tag: Tag) => tag.name)
+            setFoundTags(foundTagList);
         }
 
         setSearchText(keyword);
+
+        updateClosestMatch(foundTags, keyword, setClosestMatch);
+        // console.log(foundTags.length)
+        setHighlightedTagIndex(highlightedTagIndex % foundTagList.length)
     };
 
 
@@ -128,15 +146,12 @@ export default function ReactView() {
                 currentLevel = tag.children;
             });
         });
-        console.log(root)
         return root;
     }
 
     plugin.registerEvent(plugin.app.metadataCache.on("dataview:metadata-change",
         (type, file, oldPath?) => {
-            // console.log("Metadata change!");
             setPages(api.pages());
-            // console.log(api.page("Daily.md").tags)
         }))
 
 
@@ -152,72 +167,49 @@ export default function ReactView() {
     // tagOptionsList = tagList.map((tag: string) => { return { value: tag, label: tag } });
     tagList = buildTagTree(tagListRaw);
 
-    console.log(selectedTag)
-    if (selectedTag !== "") {
-        pagePathList = api.pages(selectedTag).values.map((page: Record<string, Literal>) => page.file.path);
-        // console.log(api.pages(selectedTag).map((page: Record<string, Literal>) => page.path))
+    if (closestMatch !== "") {
+        const tag = '#' + closestMatch;
+        console.log(tag)
+        pagePathList = api.pages(tag).values.map((page: Record<string, Literal>) => page.file.path);
+        console.log(pagePathList)
     }
-    // console.log(getLinkpath("Daily.md"))
-
-
-    // const SelectContainer = ({
-    //     children,
-    //     ...props
-    // }: ControlProps) => {
-    //     // console.log(props)
-    //     // console.log(children)
-    //     return (
-    //         //   <Tooltip content={'customise your select container'} delay={0}>
-    //         <components.Control {...props}>
-    //             <input type="text" placeholder="Type something..." />
-    //             {children}
-    //         </components.Control>
-    //         //   </Tooltip>
-    //     );
-    // };
-
 
     return (
         <>
-            <h1>Tag based Page Search</h1>
-            <p className="font-extrabold">
+            <h2>Tag based Page Search</h2>
+            <p className="">
                 Tag based page search.
             </p>
-            {/* <Select
-                options={tagOptionsList}
-                onChange={(newValue: SingleValue<string>, actionMeta: ActionMeta<typeof Option>) => setSelectedTag(newValue?.value)}
-                onInputChange={(inputValue: string, actionMeta: ActionMeta<typeof Option>) => console.log(inputValue)}
-                placeholder={'Type a tag...'}
-                menuIsOpen={false}
-            // components={{ SelectContainer }}
-            /> */}
-            <div className="bg-blue-700">
+            <div className="">
                 <label htmlFor="input">Tags</label>
                 <input
-                    className="bg-red-500"
+                    className=""
                     type="search"
                     placeholder="Type something..."
                     value={searchText}
                     onChange={filter}
                 />
             </div>
-            <div className="user-list">
+            <div className="mt-2">
                 {foundTags && foundTags.length > 0 ? (
                     foundTags.map((tag, index) => (
-                        <li key={index} className="user">
-                            <span className="user-name">{tag}</span>
+                        <li key={index} className="">
+                            <span className={`${highlightedTagIndex === index ? 'bg-gray-300' : ''}`}>{tag}</span>
                         </li>
                     ))
                 ) : (
-                    <p>No results found!</p>
+                    <p>No results found!!</p>
                 )}
             </div>
-
+            <hr />
+            <h3>Tagged pages</h3>
             <p>Found tagged pages:</p>
             <ul>
-                {pagePathList && pagePathList.map((pagePath) => (
-                    <li><span className="cm-hmd-internal-link">
-                        <span className="cm-underline" draggable="true">
+                {pagePathList && pagePathList.map((pagePath, index) => (
+                    <li key={index}><span className="cm-hmd-internal-link">
+                        <span className="cm-underline hover:underline" draggable="true" onClick={() => {
+                            app.workspace.openLinkText(pagePath, '', false);
+                        }}>
                             {pagePath}
                         </span>
                     </span>
@@ -227,6 +219,25 @@ export default function ReactView() {
         </>
     );
 };
+
+function updateClosestMatch(foundTags: string[], keyword: any, setClosestMatch: React.Dispatch<React.SetStateAction<string>>) {
+    for(var tag of foundTags) {
+        const parts = keyword.split('/');
+        const lastPart = parts[parts.length - 1];
+        if (tag.toLowerCase() === lastPart.toLowerCase()) {  // match
+            setClosestMatch(keyword);
+            break;
+        } else {
+            const index = keyword.lastIndexOf('/');
+            if (index > 0) {    // match
+                setClosestMatch(keyword.substring(0, index));
+                break;
+            } else {    // no match, continue searching
+                setClosestMatch("");
+            }
+        }
+    }
+}
 
 function TagRemoveHash(tag: string) {
     if (tag[0] === '#') {

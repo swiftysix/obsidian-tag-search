@@ -4,7 +4,7 @@
 	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
-		"css": "tailwindcss -i src/main.css -o build/tag-search/styles.css --watch",
+		"css": "tailwindcss -i src/main.css -o styles.css --watch && ncp styles.css build/tag-search/styles.css",
 		"css:build": "NODE_ENV=production tailwindcss -i src/main.css -o build/tag-search/styles.css --minify",
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && npm run css:build && node scope.js",
@@ -23,6 +23,7 @@
 		"builtin-modules": "3.3.0",
 		"esbuild": "0.17.3",
 		"esbuild-plugin-copy": "^2.1.1",
+		"ncp": "^2.0.0",
 		"obsidian": "latest",
 		"obsidian-dataview": "^0.5.64",
 		"postcss": "^8.4.33",

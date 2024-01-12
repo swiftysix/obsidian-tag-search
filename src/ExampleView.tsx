@@ -34,7 +34,7 @@ export class ExampleView extends ItemView {
             <StrictMode>
                 <PluginContext.Provider value={this.plugin}>
                     <AppContext.Provider value={this.app}>
-                        <div className="tag-search bg-red-500" id="tag-search">
+                        <div className="tag-search" id="tag-search">
                             <ReactView />
                         </div>
                     </AppContext.Provider>

@@ -64,11 +64,21 @@ export default function ReactView() {
         const handleKeyPress = (event) => {
           // Check if the pressed key is 'Enter'
           if (event.key === 'Enter' && foundTagsRef.current.length > 0) {
-            setSearchText(searchTextRef.current + foundTagsRef.current[0])
-            console.log(foundTagsRef.current[0])
-            console.log(searchTextRef.current)
 
-            // Add your logic here for when Enter is pressed
+            // check if there is a '/' in the searchTextRef.current, if so then delete all characters up to the next '/'
+            // else delete all characters up to the start of the string
+            // then concatenate the foundTagsRef.current[0] to the searchTextRef.current
+            // then set the searchTextRef.current to the new string
+            let index = searchTextRef.current.lastIndexOf('/')
+            if (index > 0) {
+                setSearchText(searchTextRef.current.substring(0, index+1) + foundTagsRef.current[0])
+            } else {
+                setSearchText(foundTagsRef.current[0])
+            }
+
+            // setSearchText(searchTextRef.current + foundTagsRef.current[0])
+            // console.log(foundTagsRef.current[0])
+            // console.log(searchTextRef.current)
           }
         };
     

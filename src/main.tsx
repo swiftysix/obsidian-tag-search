@@ -29,10 +29,10 @@ export default class HelloWorldPlugin extends Plugin {
 		console.log(isPluginEnabled(this.app));
 
 
-		this.registerEvent(this.app.metadataCache.on("dataview:index-ready", () => {
+		// this.registerEvent(this.app.metadataCache.on("dataview:index-ready", () => {
 			
-			console.log("Index ready!");
-		}))
+		// 	console.log("Index ready!");
+		// }))
 		
 
 		

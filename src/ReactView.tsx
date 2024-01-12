@@ -77,13 +77,14 @@ export default function ReactView() {
             let newSearchText = ""
             const foundTag = foundTagsRef.current[highlightedTagIndexRef.current]
             if (index > 0) {
-                newSearchText = searchTextRef.current.substring(0, index+1) + foundTag
+                newSearchText = searchTextRef.current.substring(0, index+1) + foundTag + '/'
                 setSearchText(newSearchText)
             } else {
-                newSearchText = foundTag
+                newSearchText = foundTag + '/'
                 setSearchText(newSearchText)
             }
             updateClosestMatch(foundTagsRef.current, newSearchText, setClosestMatch);
+            filter({target: {value: newSearchText}})
           }
 
           if (event.key === 'ArrowDown') {
@@ -120,8 +121,7 @@ export default function ReactView() {
         setSearchText(keyword);
 
         updateClosestMatch(foundTags, keyword, setClosestMatch);
-        // console.log(foundTags.length)
-        setHighlightedTagIndex(highlightedTagIndex % foundTagList.length)
+        setHighlightedTagIndex(foundTagList.length === 0 ? 0 : highlightedTagIndex % foundTagList.length)
     };
 
 
@@ -149,8 +149,9 @@ export default function ReactView() {
         return root;
     }
 
-    plugin.registerEvent(plugin.app.metadataCache.on("dataview:metadata-change",
-        (type, file, oldPath?) => {
+    // plugin.registerEvent(plugin.app.metadataCache.on("dataview:metadata-change",
+    plugin.registerEvent(plugin.app.metadataCache.on("resolved",
+        () => {
             setPages(api.pages());
         }))
 
@@ -169,9 +170,7 @@ export default function ReactView() {
 
     if (closestMatch !== "") {
         const tag = '#' + closestMatch;
-        console.log(tag)
         pagePathList = api.pages(tag).values.map((page: Record<string, Literal>) => page.file.path);
-        console.log(pagePathList)
     }
 
     return (

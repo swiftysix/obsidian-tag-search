@@ -3,7 +3,7 @@ import { ItemView, Plugin, WorkspaceLeaf } from "obsidian";
 import { Root, createRoot } from "react-dom/client";
 import ReactView from "./ReactView";
 import * as React from "react";
-import { AppContext, PluginContext } from "context";
+import { AppContext, PluginContext } from "src/context";
 
 export const VIEW_TYPE_EXAMPLE = "example-view";
 
@@ -33,9 +33,11 @@ export class ExampleView extends ItemView {
         this.root.render(
             <StrictMode>
                 <PluginContext.Provider value={this.plugin}>
-                <AppContext.Provider value={this.app}>
-                    <ReactView />,
-                </AppContext.Provider>
+                    <AppContext.Provider value={this.app}>
+                        <div className="tag-search bg-red-500" id="tag-search">
+                            <ReactView />
+                        </div>
+                    </AppContext.Provider>
                 </PluginContext.Provider>
             </StrictMode>,
         );

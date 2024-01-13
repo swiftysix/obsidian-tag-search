@@ -1,9 +1,8 @@
 import { useApp, usePlugin } from "src/hooks";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { DataArray, DataviewApi, Literal, getAPI, isPluginEnabled } from "obsidian-dataview";
-import { Plugin, getLinkpath } from "obsidian";
-import Select, { SingleValue, StylesConfig, components, ContainerProps, ControlProps, ActionMeta } from 'react-select'
+import { DataArray, DataviewApi, Literal, getAPI } from "obsidian-dataview";
+import { Plugin } from "obsidian";
 
 interface Tag {
     name: string;
@@ -14,41 +13,13 @@ interface TagList {
     tags: Tag[];
 }
 
-function findTagsByPath(path: string, tagList: TagList): Tag[] {
-    const parts = path.split('/');
-    const foundTags: Tag[] = [];
-
-    const findTags = (tags: Tag[], partIndex: number) => {
-        if (partIndex >= parts.length) {
-            return;
-        }
-
-        const part = TagRemoveHash(parts[partIndex]).toLowerCase();
-        const matchingTags = tags.filter(t => t.name.toLowerCase().startsWith(part));
-
-        matchingTags.forEach(tag => {
-            if (partIndex === parts.length - 1) {
-                foundTags.push(tag);
-            } else {
-                findTags(tag.children, partIndex + 1);
-            }
-        });
-    };
-
-    findTags(tagList.tags, 0);
-    return foundTags;
-}
-
-
 export default function ReactView() {
     const api = getAPI() as DataviewApi;
     const app = useApp();
     const plugin = usePlugin() as Plugin;
     let tagList: TagList = { tags: [] };
-    let tagOptionsList: { value: string, label: string }[] = [];
     let pagePathList: string[] = [];
     const [pages, setPages] = useState<DataArray<Record<string, Literal>>>(api.pages());
-    const [selectedTag, setSelectedTag] = useState<string>("");
     const [searchText, setSearchText] = useState<string>("");
     const [foundTags, setFoundTags] = useState<string[]>([]);
     const foundTagsRef = useRef(foundTags);
@@ -128,31 +99,6 @@ export default function ReactView() {
         setHighlightedTagIndex(foundTagList.length === 0 ? 0 : highlightedTagIndex % foundTagList.length)
     };
 
-
-    const buildTagTree = (tags: string[]): TagList => {
-        const root: TagList = { tags: [] };
-
-        const findOrCreateTag = (name: string, parent: Tag[]): Tag => {
-            let tag = parent.find(t => t.name === name);
-            if (!tag) {
-                tag = { name: name, children: [] };
-                parent.push(tag);
-            }
-            return tag;
-        };
-
-        tags.forEach(tagPath => {
-            let parts = tagPath.split('/');
-            let currentLevel = root.tags;
-
-            parts.forEach(part => {
-                const tag = findOrCreateTag(part, currentLevel);
-                currentLevel = tag.children;
-            });
-        });
-        return root;
-    }
-
     // plugin.registerEvent(plugin.app.metadataCache.on("dataview:metadata-change",
     plugin.registerEvent(plugin.app.metadataCache.on("resolved",
         () => {
@@ -169,7 +115,6 @@ export default function ReactView() {
             })
         }
     });
-    // tagOptionsList = tagList.map((tag: string) => { return { value: tag, label: tag } });
     tagList = buildTagTree(tagListRaw);
 
     if (closestMatch !== "") {
@@ -220,6 +165,55 @@ export default function ReactView() {
         </>
     );
 };
+
+function buildTagTree(tags: string[]): TagList {
+    const root: TagList = { tags: [] };
+
+    const findOrCreateTag = (name: string, parent: Tag[]): Tag => {
+        let tag = parent.find(t => t.name === name);
+        if (!tag) {
+            tag = { name: name, children: [] };
+            parent.push(tag);
+        }
+        return tag;
+    };
+
+    tags.forEach(tagPath => {
+        let parts = tagPath.split('/');
+        let currentLevel = root.tags;
+
+        parts.forEach(part => {
+            const tag = findOrCreateTag(part, currentLevel);
+            currentLevel = tag.children;
+        });
+    });
+    return root;
+}
+
+function findTagsByPath(path: string, tagList: TagList): Tag[] {
+    const parts = path.split('/');
+    const foundTags: Tag[] = [];
+
+    const findTags = (tags: Tag[], partIndex: number) => {
+        if (partIndex >= parts.length) {
+            return;
+        }
+
+        const part = TagRemoveHash(parts[partIndex]).toLowerCase();
+        const matchingTags = tags.filter(t => t.name.toLowerCase().startsWith(part));
+
+        matchingTags.forEach(tag => {
+            if (partIndex === parts.length - 1) {
+                foundTags.push(tag);
+            } else {
+                findTags(tag.children, partIndex + 1);
+            }
+        });
+    };
+
+    findTags(tagList.tags, 0);
+    return foundTags;
+}
 
 function updateClosestMatch(foundTags: string[], keyword: any, setClosestMatch: React.Dispatch<React.SetStateAction<string>>) {
     for(var tag of foundTags) {

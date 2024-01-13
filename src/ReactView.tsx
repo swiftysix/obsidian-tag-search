@@ -64,6 +64,10 @@ export default function ReactView() {
     }, [foundTags, searchText, highlightedTagIndex]);
 
     useEffect(() => {
+        filter({target: {value: searchText}})
+    }, []);
+
+    useEffect(() => {
         // Function to handle the key press event
         const handleKeyPress = (event) => {
           // Check if the pressed key is 'Enter'
@@ -180,16 +184,15 @@ export default function ReactView() {
                 Tag based page search.
             </p>
             <div className="">
-                <label htmlFor="input">Tags</label>
                 <input
-                    className=""
+                    className="w-full"
                     type="search"
-                    placeholder="Type something..."
+                    placeholder="Type a tag..."
                     value={searchText}
                     onChange={filter}
                 />
             </div>
-            <div className="mt-2">
+            <div className="h-40 mt-2 overflow-auto">
                 {foundTags && foundTags.length > 0 ? (
                     foundTags.map((tag, index) => (
                         <li key={index} className="">
@@ -201,7 +204,6 @@ export default function ReactView() {
                 )}
             </div>
             <hr />
-            <h3>Tagged pages</h3>
             <p>Found tagged pages:</p>
             <ul>
                 {pagePathList && pagePathList.map((pagePath, index) => (

@@ -98,6 +98,10 @@
   --tw-backdrop-sepia:  
 }
 
+.relative {
+  position: relative
+}
+
 .mt-2 {
   margin-top: 0.5rem
 }
@@ -122,8 +126,40 @@
   height: 10rem
 }
 
+.h-full {
+  height: 100%
+}
+
+.max-h-full {
+  max-height: 100%
+}
+
+.max-h-screen {
+  max-height: 100vh
+}
+
+.max-h-40 {
+  max-height: 10rem
+}
+
 .w-full {
   width: 100%
+}
+
+.max-w-full {
+  max-width: 100%
+}
+
+.flex-grow {
+  flex-grow: 1
+}
+
+.flex-col {
+  flex-direction: column
+}
+
+.justify-between {
+  justify-content: space-between
 }
 
 .overflow-auto {

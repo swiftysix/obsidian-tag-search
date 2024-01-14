@@ -1,8 +1,9 @@
 import { useApp, usePlugin } from "src/hooks";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { DataArray, DataviewApi, Literal, getAPI } from "obsidian-dataview";
+import { DataArray, DataviewApi, Literal, getAPI, Link } from "obsidian-dataview";
 import { Plugin } from "obsidian";
+import PageDisplay from "./components/pageDisplay";
 
 interface Tag {
     name: string;
@@ -13,12 +14,18 @@ interface TagList {
     tags: Tag[];
 }
 
+export interface Page {
+    path: string;
+    title: string;
+    tags: string[];
+}
+
 export default function ReactView() {
     const api = getAPI() as DataviewApi;
     const app = useApp();
     const plugin = usePlugin() as Plugin;
     let tagList: TagList = { tags: [] };
-    let pagePathList: string[] = [];
+    // let pagePathList: string[] = [];
     const [pages, setPages] = useState<DataArray<Record<string, Literal>>>(api.pages());
     const [searchText, setSearchText] = useState<string>("");
     const [foundTags, setFoundTags] = useState<string[]>([]);
@@ -27,6 +34,9 @@ export default function ReactView() {
     const [closestMatch, setClosestMatch] = useState<string>("");
     const [highlightedTagIndex, setHighlightedTagIndex] = useState<number>(0);
     const highlightedTagIndexRef = useRef(highlightedTagIndex);
+    const [searchTextPages, setSearchTextPages] = useState<string>("");
+    let taggedPages : Page[] = [];
+    const [foundTaggedPages, setFoundTaggedPages] = useState<Page[]>([]);
 
     useEffect(() => {
         foundTagsRef.current = foundTags;
@@ -119,7 +129,7 @@ export default function ReactView() {
 
     if (closestMatch !== "") {
         const tag = '#' + closestMatch;
-        pagePathList = api.pages(tag).values.map((page: Record<string, Literal>) => page.file.path);
+        taggedPages = api.pages(tag).values.map((page: Record<string, Literal>) => ({ path: page.file.path, title: page.file.name, tags: page.tags }));
     }
 
     return (
@@ -149,19 +159,7 @@ export default function ReactView() {
                 )}
             </div>
             <hr />
-            <p>Found tagged pages:</p>
-            <ul>
-                {pagePathList && pagePathList.map((pagePath, index) => (
-                    <li key={index}><span className="cm-hmd-internal-link">
-                        <span className="cm-underline hover:underline" draggable="true" onClick={() => {
-                            app.workspace.openLinkText(pagePath, '', false);
-                        }}>
-                            {pagePath}
-                        </span>
-                    </span>
-                    </li>
-                ))}
-            </ul>
+            <PageDisplay taggedPages={taggedPages}/>
         </>
     );
 };

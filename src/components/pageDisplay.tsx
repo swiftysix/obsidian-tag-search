@@ -41,7 +41,6 @@ export default function PageDisplay({ taggedPages }: { taggedPages: Page[] }) {
             results = pages;
         }
         setFilteredPages(results ?? []);
-        console.log(results)
     };
 
     useEffect(() => {

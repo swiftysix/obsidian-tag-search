@@ -181,7 +181,8 @@ function buildTagTree(tags: string[]): TagList {
         return tag;
     };
 
-    tags.forEach(tagPath => {
+    for (const tagPath of tags) {
+        if(typeof tagPath !== 'string') continue;   // if there is a tag like #3d then dataView parses it to an date object. Tags like #3d are not supported by obsidian anyway.
         let parts = tagPath.split('/');
         let currentLevel = root.tags;
 
@@ -189,7 +190,7 @@ function buildTagTree(tags: string[]): TagList {
             const tag = findOrCreateTag(part, currentLevel);
             currentLevel = tag.children;
         });
-    });
+    }
     return root;
 }
 

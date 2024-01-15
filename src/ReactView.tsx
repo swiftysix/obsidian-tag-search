@@ -25,7 +25,6 @@ export default function ReactView() {
     const app = useApp();
     const plugin = usePlugin() as Plugin;
     let tagList: TagList = { tags: [] };
-    // let pagePathList: string[] = [];
     const [pages, setPages] = useState<DataArray<Record<string, Literal>>>(api.pages());
     const [searchText, setSearchText] = useState<string>("");
     const [foundTags, setFoundTags] = useState<string[]>([]);
@@ -34,60 +33,64 @@ export default function ReactView() {
     const [closestMatch, setClosestMatch] = useState<string>("");
     const [highlightedTagIndex, setHighlightedTagIndex] = useState<number>(0);
     const highlightedTagIndexRef = useRef(highlightedTagIndex);
-    const [searchTextPages, setSearchTextPages] = useState<string>("");
-    let taggedPages : Page[] = [];
-    const [foundTaggedPages, setFoundTaggedPages] = useState<Page[]>([]);
+    let taggedPages: Page[] = [];
+    const [isTagInputFocused, setIsTagInputFocused] = useState(false);
+    const isTagInputFocusedRef = useRef(isTagInputFocused);
 
     useEffect(() => {
         foundTagsRef.current = foundTags;
         searchTextRef.current = searchText;
         highlightedTagIndexRef.current = highlightedTagIndex;
-    }, [foundTags, searchText, highlightedTagIndex]);
+        isTagInputFocusedRef.current = isTagInputFocused;
+    }, [foundTags, searchText, highlightedTagIndex, isTagInputFocused]);
 
     useEffect(() => {
-        filter({target: {value: searchText}})
+        filter({ target: { value: searchText } })
     }, []);
 
     useEffect(() => {
         // Function to handle the key press event
         const handleKeyPress = (event) => {
-          // Check if the pressed key is 'Enter'
-          if (event.key === 'Enter' && foundTagsRef.current.length > 0) {
-
-            // check if there is a '/' in the searchTextRef.current, if so then delete all characters up to the next '/'
-            // else delete all characters up to the start of the string
-            // then concatenate the foundTagsRef.current[0] to the searchTextRef.current
-            // then set the searchTextRef.current to the new string
-            let index = searchTextRef.current.lastIndexOf('/')
-            let newSearchText = ""
-            const foundTag = foundTagsRef.current[highlightedTagIndexRef.current]
-            if (index > 0) {
-                newSearchText = searchTextRef.current.substring(0, index+1) + foundTag + '/'
-                setSearchText(newSearchText)
-            } else {
-                newSearchText = foundTag + '/'
-                setSearchText(newSearchText)
+            if (!isTagInputFocusedRef.current) {
+                return;
             }
-            updateClosestMatch(foundTagsRef.current, newSearchText, setClosestMatch);
-            filter({target: {value: newSearchText}})
-          }
+            // Check if the pressed key is 'Enter'
+            if (event.key === 'Enter' && foundTagsRef.current.length > 0) {
 
-          if (event.key === 'ArrowDown') {
-            setHighlightedTagIndex((highlightedTagIndexRef.current + 1) % foundTagsRef.current.length);
-          }
-          if (event.key === 'ArrowUp') {
-            setHighlightedTagIndex((highlightedTagIndexRef.current - 1 + foundTagsRef.current.length) % foundTagsRef.current.length);
-          }
+                // check if there is a '/' in the searchTextRef.current, if so then delete all characters up to the next '/'
+                // else delete all characters up to the start of the string
+                // then concatenate the foundTagsRef.current[0] to the searchTextRef.current
+                // then set the searchTextRef.current to the new string
+                let index = searchTextRef.current.lastIndexOf('/')
+                let newSearchText = ""
+                const foundTag = foundTagsRef.current[highlightedTagIndexRef.current]
+                if (index > 0) {
+                    newSearchText = searchTextRef.current.substring(0, index + 1) + foundTag + '/'
+                    setSearchText(newSearchText)
+                } else {
+                    newSearchText = foundTag + '/'
+                    setSearchText(newSearchText)
+                }
+                updateClosestMatch(foundTagsRef.current, newSearchText, setClosestMatch);
+                filter({ target: { value: newSearchText } })
+            }
+
+            if (event.key === 'ArrowDown') {
+                setHighlightedTagIndex((highlightedTagIndexRef.current + 1) % foundTagsRef.current.length);
+            }
+            if (event.key === 'ArrowUp') {
+                setHighlightedTagIndex((highlightedTagIndexRef.current - 1 + foundTagsRef.current.length) % foundTagsRef.current.length);
+            }
         };
-    
+
         // Add event listener
         document.addEventListener('keydown', handleKeyPress);
-    
+
         // Cleanup the event listener
         return () => {
-          document.removeEventListener('keydown', handleKeyPress);
+            document.removeEventListener('keydown', handleKeyPress);
         };
-      }, []);
+    }, []);
 
     const filter = (e) => {
         const keyword = e.target.value;
@@ -145,6 +148,8 @@ export default function ReactView() {
                     placeholder="Type a tag..."
                     value={searchText}
                     onChange={filter}
+                    onFocus={() => setIsTagInputFocused(true)}
+                    onBlur={() => setIsTagInputFocused(false)}
                 />
             </div>
             <div className="h-40 mt-2 overflow-auto">
@@ -214,7 +219,7 @@ function findTagsByPath(path: string, tagList: TagList): Tag[] {
 }
 
 function updateClosestMatch(foundTags: string[], keyword: any, setClosestMatch: React.Dispatch<React.SetStateAction<string>>) {
-    for(var tag of foundTags) {
+    for (var tag of foundTags) {
         const parts = keyword.split('/');
         const lastPart = parts[parts.length - 1];
         if (tag.toLowerCase() === lastPart.toLowerCase()) {  // match

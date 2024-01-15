@@ -12,6 +12,26 @@ export default function PageDisplay({ taggedPages }: { taggedPages: Page[] }) {
     const [searchTextPages, setSearchTextPages] = useState<string>("");
     const pages: Page[] = taggedPages ?? [];
     const [filteredPages, setFilteredPages] = useState<Page[]>([]);
+    const [isCtrlPressed, setIsCtrlPressed] = useState<boolean>(false);
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Control') {
+                setIsCtrlPressed(true);
+            }
+        };
+        const handleKeyUp = (event) => {
+            if (event.key === 'Control') {
+                setIsCtrlPressed(false);
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }), [isCtrlPressed];
 
     const filterPages = (keyword: string) => {
         let results: Page[] = [];
@@ -50,7 +70,7 @@ export default function PageDisplay({ taggedPages }: { taggedPages: Page[] }) {
                         {filteredPages && filteredPages.map((pagePath, index) => (
                             <li key={index}><span className="cm-hmd-internal-link">
                                 <span className="cm-underline hover:underline" draggable="true" onClick={() => {
-                                    app.workspace.openLinkText(pagePath.path, '', false);
+                                    app.workspace.openLinkText(pagePath.path, '', isCtrlPressed ? 'tab' : false);
                                 }}>
                                     {pagePath.title}
                                 </span>

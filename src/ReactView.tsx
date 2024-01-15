@@ -36,6 +36,7 @@ export default function ReactView() {
     let taggedPages: Page[] = [];
     const [isTagInputFocused, setIsTagInputFocused] = useState(false);
     const isTagInputFocusedRef = useRef(isTagInputFocused);
+    const canUpdateTagListRef = useRef(true);
 
     useEffect(() => {
         foundTagsRef.current = foundTags;
@@ -86,6 +87,11 @@ export default function ReactView() {
         // Add event listener
         document.addEventListener('keydown', handleKeyPress);
 
+        plugin.registerEvent(plugin.app.metadataCache.on("resolved",
+        () => {
+            updatePagesAndTags();
+        }))        
+
         // Cleanup the event listener
         return () => {
             document.removeEventListener('keydown', handleKeyPress);
@@ -112,11 +118,20 @@ export default function ReactView() {
         setHighlightedTagIndex(foundTagList.length === 0 ? 0 : highlightedTagIndex % foundTagList.length)
     };
 
+    const updatePagesAndTags = () => {
+        if (!canUpdateTagListRef.current) {
+            return;
+        }
+        setPages(api.pages());
+        canUpdateTagListRef.current = false;
+        setTimeout(() => {
+            canUpdateTagListRef.current = true;
+        }, 1000);
+    }
+
     // plugin.registerEvent(plugin.app.metadataCache.on("dataview:metadata-change",
-    plugin.registerEvent(plugin.app.metadataCache.on("resolved",
-        () => {
-            setPages(api.pages());
-        }))
+
+    
 
 
     let tagListRaw: string[] = [];

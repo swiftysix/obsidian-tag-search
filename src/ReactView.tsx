@@ -87,10 +87,14 @@ export default function ReactView() {
         // Add event listener
         document.addEventListener('keydown', handleKeyPress);
 
-        plugin.registerEvent(plugin.app.metadataCache.on("resolved",
-        () => {
+        plugin.registerEvent(api.app.metadataCache.on("dataview:index-ready", () => {
+            console.log("index-ready 123");
             updatePagesAndTags();
-        }))        
+        }));
+        plugin.registerEvent(api.app.metadataCache.on("dataview:metadata-change", () => {
+            console.log("metadata-change 123");
+            updatePagesAndTags();
+        }));
 
         // Cleanup the event listener
         return () => {
@@ -123,6 +127,10 @@ export default function ReactView() {
             return;
         }
         setPages(api.pages());
+        setTimeout(() => {
+            filter({ target: { value: searchText } })
+            console.log("foundTags", foundTags)
+        }, 1000);
         canUpdateTagListRef.current = false;
         setTimeout(() => {
             canUpdateTagListRef.current = true;
@@ -132,7 +140,6 @@ export default function ReactView() {
     // plugin.registerEvent(plugin.app.metadataCache.on("dataview:metadata-change",
 
     
-
 
     let tagListRaw: string[] = [];
     pages.forEach((page: any) => {

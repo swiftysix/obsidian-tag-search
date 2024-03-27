@@ -21,7 +21,7 @@ export class ExampleView extends ItemView {
     }
 
     getIcon(): string {
-        return "calendar-with-checkmark";
+        return "scan-search";
     }
 
     getDisplayText() {

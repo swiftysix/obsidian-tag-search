@@ -1,6 +1,6 @@
 import { useApp, usePlugin } from "src/hooks";
 import * as React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { DataArray, DataviewApi, Literal, getAPI, Link } from "obsidian-dataview";
 import { Plugin } from "obsidian";
 import PageDisplay from "./components/pageDisplay";
@@ -46,7 +46,8 @@ export default function ReactView() {
     }, [foundTags, searchText, highlightedTagIndex, isTagInputFocused]);
 
     useEffect(() => {
-        filter({ target: { value: searchText } })
+        // filter({ target: { value: searchText } })
+        updatePagesAndTags();
     }, []);
 
     useEffect(() => {
@@ -89,11 +90,11 @@ export default function ReactView() {
 
         plugin.registerEvent(api.app.metadataCache.on("dataview:index-ready", () => {
             console.log("index-ready 123");
-            updatePagesAndTags();
+            // updatePagesAndTags();
         }));
         plugin.registerEvent(api.app.metadataCache.on("dataview:metadata-change", () => {
             console.log("metadata-change 123");
-            updatePagesAndTags();
+            // updatePagesAndTags();
         }));
 
         // Cleanup the event listener
@@ -126,10 +127,10 @@ export default function ReactView() {
         if (!canUpdateTagListRef.current) {
             return;
         }
-        setPages(api.pages());
+        console.log("updatePagesAndTags 2");
         setTimeout(() => {
+            setPages(api.pages());
             filter({ target: { value: searchText } })
-            console.log("foundTags", foundTags)
         }, 1000);
         canUpdateTagListRef.current = false;
         setTimeout(() => {
@@ -139,7 +140,6 @@ export default function ReactView() {
 
     // plugin.registerEvent(plugin.app.metadataCache.on("dataview:metadata-change",
 
-    
 
     let tagListRaw: string[] = [];
     pages.forEach((page: any) => {
@@ -151,15 +151,24 @@ export default function ReactView() {
         }
     });
     tagList = buildTagTree(tagListRaw);
-
+    
     if (closestMatch !== "") {
         const tag = '#' + closestMatch;
         taggedPages = api.pages(tag).values.map((page: Record<string, Literal>) => ({ path: page.file.path, title: page.file.name, tags: page.tags }));
     }
+    console.log(pages)
+    console.log(tagListRaw)
+    console.log(tagList)
+    console.log(foundTags)
+    
+    const [, forceUpdate] = useReducer(x => x + 1, 0);
 
     return (
         <>
-            <h2>Tag based Page Search</h2>
+            <div className="flex items-center justify-between">
+                <h2>Tag based Search</h2>
+                <button className="ml-2" onClick={() => { updatePagesAndTags(); }}>Refresh</button>
+            </div>
             <p className="">
                 Tag based page search.
             </p>
@@ -186,10 +195,10 @@ export default function ReactView() {
                 )}
             </div>
             <hr />
-            <PageDisplay taggedPages={taggedPages}/>
+            <PageDisplay taggedPages={taggedPages} />
         </>
     );
-};
+}
 
 function buildTagTree(tags: string[]): TagList {
     const root: TagList = { tags: [] };
@@ -204,8 +213,8 @@ function buildTagTree(tags: string[]): TagList {
     };
 
     for (const tagPath of tags) {
-        if(typeof tagPath !== 'string') continue;   // if there is a tag like #3d then dataView parses it to an date object. Tags like #3d are not supported by obsidian anyway.
-        let parts = tagPath.split('/');
+        if (typeof tagPath !== 'string') continue;   // if there is a tag like #3d then dataView parses it to an date object. Tags like #3d are not supported by obsidian anyway.
+        const parts = tagPath.split('/');
         let currentLevel = root.tags;
 
         parts.forEach(part => {
@@ -242,7 +251,7 @@ function findTagsByPath(path: string, tagList: TagList): Tag[] {
 }
 
 function updateClosestMatch(foundTags: string[], keyword: any, setClosestMatch: React.Dispatch<React.SetStateAction<string>>) {
-    for (var tag of foundTags) {
+    for (const tag of foundTags) {
         const parts = keyword.split('/');
         const lastPart = parts[parts.length - 1];
         if (tag.toLowerCase() === lastPart.toLowerCase()) {  // match

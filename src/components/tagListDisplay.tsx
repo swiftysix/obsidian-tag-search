@@ -41,8 +41,17 @@ export default function TagListDisplay({ foundTags, isTagInputFocusedRef, highli
         };
     }, []);
 
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (scrollContainerRef.current && scrollContainerRef.current.children[highlightedTagIndex]) {
+            const highlightedElement = scrollContainerRef.current.children[highlightedTagIndex] as HTMLElement;
+            highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, [highlightedTagIndex]);
+
     return (
-        <div className="h-40 mt-2 overflow-auto">
+        <div className="h-40 mt-2 overflow-auto" ref={scrollContainerRef}>
             {foundTags && foundTags.length > 0 ? (
                 foundTags.map((tag, index) => (
                     <li key={index} className="">

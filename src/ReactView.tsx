@@ -4,6 +4,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { DataArray, DataviewApi, Literal, getAPI, Link } from "obsidian-dataview";
 import { Plugin } from "obsidian";
 import PageDisplay from "./components/pageDisplay";
+import TagListDisplay from './components/tagListDisplay';
 
 interface Tag {
     name: string;
@@ -24,8 +25,10 @@ export default function ReactView() {
     const api = getAPI() as DataviewApi;
     const app = useApp();
     const plugin = usePlugin() as Plugin;
-    let tagList: TagList = { tags: [] };
-    const [pages, setPages] = useState<DataArray<Record<string, Literal>>>(api.pages());
+    const tagList: TagList = { tags: [] };
+    const tagListRef = useRef(tagList);
+    const pages: DataArray = api.pages();
+    const pagesRef = useRef(pages);
     const [searchText, setSearchText] = useState<string>("");
     const [foundTags, setFoundTags] = useState<string[]>([]);
     const foundTagsRef = useRef(foundTags);
@@ -63,7 +66,7 @@ export default function ReactView() {
                 // else delete all characters up to the start of the string
                 // then concatenate the foundTagsRef.current[0] to the searchTextRef.current
                 // then set the searchTextRef.current to the new string
-                let index = searchTextRef.current.lastIndexOf('/')
+                const index = searchTextRef.current.lastIndexOf('/')
                 let newSearchText = ""
                 const foundTag = foundTagsRef.current[highlightedTagIndexRef.current]
                 if (index > 0) {
@@ -76,13 +79,6 @@ export default function ReactView() {
                 updateClosestMatch(foundTagsRef.current, newSearchText, setClosestMatch);
                 filter({ target: { value: newSearchText } })
             }
-
-            if (event.key === 'ArrowDown') {
-                setHighlightedTagIndex((highlightedTagIndexRef.current + 1) % foundTagsRef.current.length);
-            }
-            if (event.key === 'ArrowUp') {
-                setHighlightedTagIndex((highlightedTagIndexRef.current - 1 + foundTagsRef.current.length) % foundTagsRef.current.length);
-            }
         };
 
         // Add event listener
@@ -90,7 +86,7 @@ export default function ReactView() {
 
         plugin.registerEvent(api.app.metadataCache.on("dataview:index-ready", () => {
             console.log("index-ready 123");
-            // updatePagesAndTags();
+            updatePagesAndTags();
         }));
         plugin.registerEvent(api.app.metadataCache.on("dataview:metadata-change", () => {
             console.log("metadata-change 123");
@@ -107,13 +103,13 @@ export default function ReactView() {
         const keyword = e.target.value;
         let foundTagList: string[] = [];
         if (keyword !== '') {
-            const results = findTagsByPath(keyword, tagList)
+            const results = findTagsByPath(keyword, tagListRef.current)
             if (results) {
                 foundTagList = results.map((tag: Tag) => tag.name)
                 setFoundTags(foundTagList);
             }
         } else {
-            foundTagList = tagList.tags.map((tag: Tag) => tag.name)
+            foundTagList = tagListRef.current.tags.map((tag: Tag) => tag.name)
             setFoundTags(foundTagList);
         }
 
@@ -129,8 +125,11 @@ export default function ReactView() {
         }
         console.log("updatePagesAndTags 2");
         setTimeout(() => {
-            setPages(api.pages());
-            filter({ target: { value: searchText } })
+            pagesRef.current = api.pages();
+            buildTagList();
+            buildTaggedPagesList();
+            setFoundTags(tagListRef.current.tags.map((tag: Tag) => tag.name));
+            // filter({ target: { value: searchText } })
         }, 1000);
         canUpdateTagListRef.current = false;
         setTimeout(() => {
@@ -138,29 +137,29 @@ export default function ReactView() {
         }, 1000);
     }
 
-    // plugin.registerEvent(plugin.app.metadataCache.on("dataview:metadata-change",
-
-
-    let tagListRaw: string[] = [];
-    pages.forEach((page: any) => {
-        if (page && page.tags) {
-            page.tags.forEach((tag: string) => {
-                tag = TagRemoveHash(tag);
-                tagListRaw = [...tagListRaw, tag];
-            })
-        }
-    });
-    tagList = buildTagTree(tagListRaw);
-    
-    if (closestMatch !== "") {
-        const tag = '#' + closestMatch;
-        taggedPages = api.pages(tag).values.map((page: Record<string, Literal>) => ({ path: page.file.path, title: page.file.name, tags: page.tags }));
+    const buildTagList = () => {
+        let tagListRaw: string[] = [];
+            pagesRef.current.forEach((page: any) => {
+                if (page && page.tags) {
+                    page.tags.forEach((tag: string) => {
+                        tag = TagRemoveHash(tag);
+                        tagListRaw = [...tagListRaw, tag];
+                    })
+                }
+            });
+            tagListRef.current = buildTagTree(tagListRaw);
+            console.log(tagListRef.current)
     }
-    console.log(pages)
-    console.log(tagListRaw)
-    console.log(tagList)
-    console.log(foundTags)
-    
+
+    const buildTaggedPagesList = () => {
+        if (closestMatch !== "") {
+            const tag = '#' + closestMatch;
+            taggedPages = api.pages(tag).values.map((page: Record<string, Literal>) => ({ path: page.file.path, title: page.file.name, tags: page.tags }));
+        }
+    }
+
+    buildTaggedPagesList();
+
     const [, forceUpdate] = useReducer(x => x + 1, 0);
 
     return (
@@ -183,17 +182,8 @@ export default function ReactView() {
                     onBlur={() => setIsTagInputFocused(false)}
                 />
             </div>
-            <div className="h-40 mt-2 overflow-auto">
-                {foundTags && foundTags.length > 0 ? (
-                    foundTags.map((tag, index) => (
-                        <li key={index} className="">
-                            <span className={`${highlightedTagIndex === index ? 'bg-gray-300' : ''}`}>{tag}</span>
-                        </li>
-                    ))
-                ) : (
-                    <p>No results found!!</p>
-                )}
-            </div>
+
+            <TagListDisplay foundTags={foundTags} isTagInputFocusedRef={isTagInputFocusedRef} highlightedTagIndex={highlightedTagIndex} setHighlightedTagIndex={setHighlightedTagIndex} />
             <hr />
             <PageDisplay taggedPages={taggedPages} />
         </>
